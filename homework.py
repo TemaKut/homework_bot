@@ -14,8 +14,10 @@ logging.basicConfig(
     format='%(asctime)s, %(filename)s, %(lineno)s, %(levelname)s, %(message)s',
     encoding='UTF-8',
 )
-PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+PRACTICUM_TOKEN = os.getenv(
+    'PRACTICUM_TOKEN', default='AQAAAABCko4nAAYckR8I4etzyEp_vV3gExraFy4')
+TELEGRAM_TOKEN = os.getenv(
+    'TELEGRAM_TOKEN', default='5569022752:AAHewTeGaJQP094q8_AliT0427Z2araKjUc')
 
 TELEGRAM_CHAT_ID = 1958746856
 
