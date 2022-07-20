@@ -35,7 +35,7 @@ HOMEWORK_STATUSES = {
 
 
 def send_message(bot, message):
-    """ Отправляем сообщение в чат ТГ. """
+    """Отправляем сообщение в чат ТГ."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.info('Сообщение отправилось!')
@@ -44,8 +44,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """ Получаем список домашних работ за определённое время. """
-
+    """Получаем список домашних работ за определённое время."""
     timestamp = current_timestamp or int(time.time())
     response = requests.get(
         ENDPOINT, headers=HEADERS, params={'from_date': timestamp})
@@ -55,7 +54,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """ Проверяем получение json. """
+    """Проверяем получение json."""
     if type(response) is not dict:
         raise TypeError('Ответ API отличен от словаря')
     try:
@@ -72,7 +71,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """ Проверяем статус определённой домашки. """
+    """Проверяем статус определённой домашки."""
     if 'homework_name' not in homework:
         raise KeyError('Нет ключа "homework_name" в ответе API Yandex')
     if 'status' not in homework:
@@ -87,7 +86,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """ Проверяем наличие токенов. """
+    """Проверяем наличие токенов."""
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
 
