@@ -1,9 +1,11 @@
+import sys
 import os
 import time
 from http import HTTPStatus
 
 import requests
 import logging
+from logging.handlers import RotatingFileHandler
 
 import telegram
 from telegram.ext import Updater
@@ -16,10 +18,29 @@ logging.basicConfig(
     format='%(asctime)s, %(filename)s, %(lineno)s, %(levelname)s, %(message)s',
     encoding='UTF-8',
 )
+logger = logging.getLogger('simple_example')
+logger.setLevel(logging.DEBUG)
 
-PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+ch = RotatingFileHandler(
+    'homework.log',
+    maxBytes=50000000,
+    backupCount=5,
+    encoding='UTF-8',
+)
+ch.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter(
+    '%(asctime)s, %(filename)s, %(lineno)s, %(levelname)s, %(message)s')
+ch.setFormatter(formatter)
+
+logger.addHandler(ch)
+
+
+PRACTICUM_TOKEN = os.getenv(
+    'PRACTICUM_TOKEN', default='AQAAAABCko4nAAYckR8I4etzyEp_vV3gExraFy4')
+TELEGRAM_TOKEN = os.getenv(
+    'TELEGRAM_TOKEN', default='5569022752:AAHewTeGaJQP094q8_AliT0427Z2araKjUc')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', default=1958746856)
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -35,29 +56,34 @@ HOMEWORK_VERDICTS = {
 def send_message(bot, message):
     """Отправляем сообщение в чат ТГ."""
     try:
-        logging.info('Пытаемся отправить сообщение.')
+        logger.info('Пытаемся отправить сообщение.')
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except Exception as error:
-        logging.error(f'Сообщение не отправлено! {error}')
-        raise f'Ошибка отправки в телеграм сообщения: {error}'
+        logger.error(f'Сообщение не отправлено! {error}')
+        raise Exception(f'Ошибка отправки в телеграм сообщения: {error}')
     else:
-        logging.info('Сообщение отправилось!')
+        logger.info('Сообщение отправилось!')
 
 
 def get_api_answer(current_timestamp):
     """Получаем список домашних работ за определённое время."""
     timestamp = current_timestamp or int(time.time())
     try:
-        logging.info('Проверяем статус запроса к Yandex')
+        logger.info('Проверяем статус запроса к Yandex')
         response = requests.get(
             ENDPOINT, headers=HEADERS, params={'from_date': timestamp})
+        try:
+            response.json()
+        except Exception as error:
+            logger.error(f'Ошибка получения json {error}')
+            raise Exception(f'Ошибка получения json {error}')
 
         if response.status_code != HTTPStatus.OK:
-            raise 'Статус кода яндекса != ОК'
+            raise Exception('Статус кода яндекса != ОК')
 
     except Exception as error:
-        logging.error(f'Ошибка получения статуса кода {error}')
-        raise f'Ошибка получения статуса кода {error}'
+        logger.error(f'Ошибка получения статуса кода {error}')
+        raise Exception(f'Ошибка получения статуса кода {error}')
     else:
         return response.json()
 
@@ -65,27 +91,27 @@ def get_api_answer(current_timestamp):
 def check_response(response):
     """Проверяем получение json."""
     if not isinstance(response, dict):
-        logging.error('response не является словарём.')
+        logger.error('response не является словарём.')
         raise TypeError('Ответ API отличен от словаря')
 
     try:
         homeworks = response['homeworks']
         if not isinstance(homeworks, list):
-            logging.error('homeworks не список')
-            raise 'homeworks не список'
+            logger.error('homeworks не список')
+            raise Exception('homeworks не список')
     except Exception as error:
-        logging.error('Ошибка словаря по ключу homeworks')
-        raise f'Ошибка словаря по ключу homeworks {error}'
+        logger.error('Ошибка словаря по ключу homeworks')
+        raise Exception(f'Ошибка словаря по ключу homeworks {error}')
 
     try:
         response['current_date']
     except Exception as error:
-        logging.error(f'Ошибка получения current_date {error}')
-        raise f'Ошибка получения current_date {error}'
+        logger.error(f'Ошибка получения current_date {error}')
+        raise Exception(f'Ошибка получения current_date {error}')
     try:
         homework = homeworks[0]
     except IndexError:
-        logging.error('Список домашних работ пуст')
+        logger.error('Список домашних работ пуст')
         raise IndexError('Список домашних работ пуст')
 
     return homework
@@ -121,8 +147,11 @@ def main():
     updater = Updater(TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     if not check_tokens():
-        logging.critical('Отсутствуют одна или несколько переменных окружения')
-        raise Exception('Отсутствуют одна или несколько переменных окружения')
+        logger.critical('Отсутствуют одна или несколько переменных окружения')
+        try:
+            sys.exit()
+        except Exception:
+            logger.critical('Ошибка остановки программы.')
 
     while True:
         try:
@@ -135,9 +164,11 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
-            time.sleep(RETRY_TIME)
+
         else:
-            logging.info('Ошибок нет. Всё круто!')
+            logger.info('Ошибок нет. Всё круто!')
+
+        finally:
             time.sleep(RETRY_TIME)
 
     updater.start_polling()
