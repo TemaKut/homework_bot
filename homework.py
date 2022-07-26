@@ -35,16 +35,16 @@ ch.setFormatter(formatter)
 
 logger.addHandler(ch)
 
-
 PRACTICUM_TOKEN = os.getenv(
     'PRACTICUM_TOKEN', default='AQAAAABCko4nAAYckR8I4etzyEp_vV3gExraFy4')
 TELEGRAM_TOKEN = os.getenv(
     'TELEGRAM_TOKEN', default='5569022752:AAHewTeGaJQP094q8_AliT0427Z2araKjUc')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', default=1958746856)
+
 RETRY_TIME = 600
+
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
 
 HOMEWORK_VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -55,8 +55,8 @@ HOMEWORK_VERDICTS = {
 
 def send_message(bot, message):
     """Отправляем сообщение в чат ТГ."""
+    logger.info('Пытаемся отправить сообщение.')
     try:
-        logger.info('Пытаемся отправить сообщение.')
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except Exception as error:
         logger.error(f'Сообщение не отправлено! {error}')
@@ -68,12 +68,12 @@ def send_message(bot, message):
 def get_api_answer(current_timestamp):
     """Получаем список домашних работ за определённое время."""
     timestamp = current_timestamp or int(time.time())
+    logger.info('Проверяем статус запроса к Yandex')
     try:
-        logger.info('Проверяем статус запроса к Yandex')
         response = requests.get(
             ENDPOINT, headers=HEADERS, params={'from_date': timestamp})
         try:
-            response.json()
+            response_json = response.json()
         except Exception as error:
             logger.error(f'Ошибка получения json {error}')
             raise Exception(f'Ошибка получения json {error}')
@@ -85,7 +85,7 @@ def get_api_answer(current_timestamp):
         logger.error(f'Ошибка получения статуса кода {error}')
         raise Exception(f'Ошибка получения статуса кода {error}')
     else:
-        return response.json()
+        return response_json
 
 
 def check_response(response):
@@ -108,11 +108,13 @@ def check_response(response):
     except Exception as error:
         logger.error(f'Ошибка получения current_date {error}')
         raise Exception(f'Ошибка получения current_date {error}')
+
     try:
         homework = homeworks[0]
     except IndexError:
         logger.error('Список домашних работ пуст')
-        raise IndexError('Список домашних работ пуст')
+
+        # raise IndexError('Список домашних работ пуст')
 
     return homework
 
@@ -137,8 +139,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверяем наличие токенов."""
-    if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
-        return True
+    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
@@ -148,10 +149,7 @@ def main():
     current_timestamp = int(time.time())
     if not check_tokens():
         logger.critical('Отсутствуют одна или несколько переменных окружения')
-        try:
-            sys.exit()
-        except Exception:
-            logger.critical('Ошибка остановки программы.')
+        sys.exit()
 
     while True:
         try:
