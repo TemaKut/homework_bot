@@ -35,11 +35,9 @@ ch.setFormatter(formatter)
 
 logger.addHandler(ch)
 
-PRACTICUM_TOKEN = os.getenv(
-    'PRACTICUM_TOKEN', default='AQAAAABCko4nAAYckR8I4etzyEp_vV3gExraFy4')
-TELEGRAM_TOKEN = os.getenv(
-    'TELEGRAM_TOKEN', default='5569022752:AAHewTeGaJQP094q8_AliT0427Z2araKjUc')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', default=1958746856)
+PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_TIME = 600
 
