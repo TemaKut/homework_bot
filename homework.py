@@ -1,5 +1,6 @@
 import sys
 import os
+from os import path, remove
 import time
 from http import HTTPStatus
 
@@ -10,6 +11,8 @@ from logging.handlers import RotatingFileHandler
 import telegram
 from telegram.ext import Updater
 
+if path.isfile("homework.log"):
+    remove("homework.log")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -110,25 +113,26 @@ def check_response(response):
 
     try:
         homework = homeworks[0]
+        return homework
     except IndexError:
-        logger.error('Список домашних работ пуст')
-
-        # raise IndexError('Список домашних работ пуст')
-
-    return homework
+        logger.info('Список домашних работ пуст')
+        raise IndexError('Список домашних работ пуст')
 
 
 def parse_status(homework):
     """Проверяем статус определённой домашки."""
     if 'homework_name' not in homework:
+        logger.error('Нет ключа "homework_name" в ответе API Yandex')
         raise KeyError('Нет ключа "homework_name" в ответе API Yandex')
 
     if 'status' not in homework:
+        logger.error('Нет ключа "status" в ответе API Yandex')
         raise Exception('Нет ключа "status" в ответе API Yandex')
 
     homework_name = homework['homework_name']
     homework_status = homework['status']
     if homework_status not in HOMEWORK_VERDICTS:
+        logger.error(f'Нет ключа в словаре статусов: {homework_status}')
         raise Exception(f'Нет ключа в словаре статусов: {homework_status}')
 
     verdict = HOMEWORK_VERDICTS[homework_status]
@@ -157,6 +161,8 @@ def main():
                 get_api_answer(current_timestamp))
             message = parse_status(verified_response)
             send_message(bot, message)
+        except IndexError:
+            logger.info('Словили пустой список')
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
